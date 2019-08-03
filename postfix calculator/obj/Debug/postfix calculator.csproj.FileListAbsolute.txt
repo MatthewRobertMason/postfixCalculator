@@ -1,7 +1,0 @@
-C:\Users\matt\source\repos\postfix calculator\postfix calculator\bin\Debug\postfix calculator.exe.config
-C:\Users\matt\source\repos\postfix calculator\postfix calculator\bin\Debug\postfix calculator.exe
-C:\Users\matt\source\repos\postfix calculator\postfix calculator\bin\Debug\postfix calculator.pdb
-C:\Users\matt\source\repos\postfix calculator\postfix calculator\obj\Debug\postfix calculator.csprojResolveAssemblyReference.cache
-C:\Users\matt\source\repos\postfix calculator\postfix calculator\obj\Debug\postfix calculator.csproj.CoreCompileInputs.cache
-C:\Users\matt\source\repos\postfix calculator\postfix calculator\obj\Debug\postfix calculator.exe
-C:\Users\matt\source\repos\postfix calculator\postfix calculator\obj\Debug\postfix calculator.pdb
