@@ -1,0 +1,9 @@
+C:\Users\matt\source\repos\postfix calculator\PostfixBooleanTester\bin\Debug\PostfixBooleanTester.exe.config
+C:\Users\matt\source\repos\postfix calculator\PostfixBooleanTester\bin\Debug\PostfixBooleanTester.exe
+C:\Users\matt\source\repos\postfix calculator\PostfixBooleanTester\bin\Debug\PostfixBooleanTester.pdb
+C:\Users\matt\source\repos\postfix calculator\PostfixBooleanTester\obj\Debug\PostfixBooleanTester.csprojResolveAssemblyReference.cache
+C:\Users\matt\source\repos\postfix calculator\PostfixBooleanTester\obj\Debug\PostfixBooleanTester.csproj.CoreCompileInputs.cache
+C:\Users\matt\source\repos\postfix calculator\PostfixBooleanTester\obj\Debug\PostfixBooleanTester.exe
+C:\Users\matt\source\repos\postfix calculator\PostfixBooleanTester\obj\Debug\PostfixBooleanTester.pdb
+C:\Users\matt\source\repos\postfix calculator\PostfixBooleanTester\bin\Debug\postfixBoolean.dll
+C:\Users\matt\source\repos\postfix calculator\PostfixBooleanTester\bin\Debug\postfixBoolean.pdb

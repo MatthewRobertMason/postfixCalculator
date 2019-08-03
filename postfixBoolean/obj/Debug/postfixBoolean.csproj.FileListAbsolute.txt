@@ -1,0 +1,6 @@
+C:\Users\matt\source\repos\postfix calculator\postfixBoolean\bin\Debug\postfixBoolean.dll
+C:\Users\matt\source\repos\postfix calculator\postfixBoolean\bin\Debug\postfixBoolean.pdb
+C:\Users\matt\source\repos\postfix calculator\postfixBoolean\obj\Debug\postfixBoolean.csprojResolveAssemblyReference.cache
+C:\Users\matt\source\repos\postfix calculator\postfixBoolean\obj\Debug\postfixBoolean.csproj.CoreCompileInputs.cache
+C:\Users\matt\source\repos\postfix calculator\postfixBoolean\obj\Debug\postfixBoolean.dll
+C:\Users\matt\source\repos\postfix calculator\postfixBoolean\obj\Debug\postfixBoolean.pdb
