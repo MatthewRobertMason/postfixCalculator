@@ -129,94 +129,101 @@ namespace PostfixBoolean
 
         public string ConvertToPostfix(string equation)
         {
-            equation = PrepareEquation(equation);
-
-            String output = "";
-            Stack<string> opstack = new Stack<string>();
-
-            foreach (string s in equation.Split(' '))
+            try
             {
-                string item = s.Trim();
+                equation = PrepareEquation(equation);
 
-                if (item == "")
+                String output = "";
+                Stack<string> opstack = new Stack<string>();
+
+                foreach (string s in equation.Split(' '))
                 {
-                    continue;
-                }
+                    string item = s.Trim();
 
-                if (IsOperator(item))
-                {
-                    item = item.ToUpper();
-
-                    if (item != ")")
+                    if (item == "")
                     {
-                        if (item == "(")
-                        {
-                            opstack.Push(item);
-                        }
-                        else
-                        {
-                            bool test = false;
-                            string rhs = "";
+                        continue;
+                    }
 
-                            while (test == false)
+                    if (IsOperator(item))
+                    {
+                        item = item.ToUpper();
+
+                        if (item != ")")
+                        {
+                            if (item == "(")
                             {
-                                if (opstack.Count > 0)
-                                {
-                                    rhs = opstack.Peek();
+                                opstack.Push(item);
+                            }
+                            else
+                            {
+                                bool test = false;
+                                string rhs = "";
 
-                                    if ((OpPrecedence(rhs) > 1) && (OpPrecedence(item) >= OpPrecedence(rhs)))
+                                while (test == false)
+                                {
+                                    if (opstack.Count > 0)
                                     {
-                                        output += " " + opstack.Pop();
+                                        rhs = opstack.Peek();
+
+                                        if ((OpPrecedence(rhs) > 1) && (OpPrecedence(item) >= OpPrecedence(rhs)))
+                                        {
+                                            output += " " + opstack.Pop();
+                                        }
+                                        else
+                                        {
+                                            test = true;
+                                        }
                                     }
                                     else
                                     {
                                         test = true;
                                     }
                                 }
-                                else
+
+                                opstack.Push(item);
+                            }
+                        }
+                        else
+                        {
+                            string popped = " ";
+                            while (popped.Last() != '(')
+                            {
+                                popped = opstack.Pop();
+                                //if (popped != "(")
+                                if (popped.Last() != '(')
                                 {
-                                    test = true;
+                                    output += " " + popped;
                                 }
                             }
-
-                            opstack.Push(item);
                         }
                     }
                     else
                     {
-                        string popped = " ";
-                        while (popped.Last() != '(')
+                        item = item.ToLower();
+
+                        if ((item == "true") || (item == "false"))
                         {
-                            popped = opstack.Pop();
-                            //if (popped != "(")
-                            if (popped.Last() != '(')
-                            {
-                                output += " " + popped;
-                            }
+                            output += " " + item;
+                        }
+                        else
+                        {
+                            throw new InvalidOperandException("Invalid operand in expresssion");
                         }
                     }
                 }
-                else
+
+                while (opstack.Count > 0)
                 {
-                    item = item.ToLower();
-
-                    if ((item == "true") || (item == "false"))
-                    {
-                        output += " " + item;
-                    }
-                    else
-                    {
-                        throw new InvalidOperandException("Invalid operand in expresssion");
-                    }
+                    output += " " + opstack.Pop();
                 }
-            }
 
-            while (opstack.Count > 0)
+                return output.Trim();
+            }
+            catch
             {
-                output += " " + opstack.Pop();
+                throw new InvalidEquationException("Invalid equation");
             }
-
-            return output.Trim();
         }
 
         private string Calculate(string op, params string[] operands)

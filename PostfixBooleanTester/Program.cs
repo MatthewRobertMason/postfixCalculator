@@ -10,37 +10,45 @@ namespace PostfixBooleanTester
 {
     internal class Program
     {
-        public static void testPostFix(string equation)
+        public static void testBooleanPostFix(string equation)
         {
             try
             {
                 Console.WriteLine("----------------------------------------------");
-                Console.WriteLine(equation);
+                Console.WriteLine("Convert to postfix:");
+
+                Console.WriteLine("Equation: " + equation);
                 BooleanPostfix bp = new BooleanPostfix();
                 string postfix = bp.ConvertToPostfix(equation);
-                Console.WriteLine(postfix);
+                Console.WriteLine("Postfix:  " + postfix);
                 string answer = bp.CalculatePostFix(postfix);
-                Console.WriteLine(answer);
+                Console.WriteLine("Value:    " + answer);
                 Console.WriteLine("---");
 
+                Console.WriteLine("Convert back to infix then postfix:");
                 string infix = bp.ConvertToInfix(postfix);
-                Console.WriteLine(infix);
+                Console.WriteLine("Infix:    " + infix);
                 postfix = bp.ConvertToPostfix(infix);
-                Console.WriteLine(postfix);
+                Console.WriteLine("Postfix:  " + postfix);
                 answer = bp.CalculatePostFix(postfix);
-                Console.WriteLine(answer);
+                Console.WriteLine("Value:    " + answer);
                 Console.WriteLine("---");
 
+                Console.WriteLine("Convert back to infix then postfix again:");
                 infix = bp.ConvertToInfix(postfix);
-                Console.WriteLine(infix);
+                Console.WriteLine("Infix:    " + infix);
                 postfix = bp.ConvertToPostfix(infix);
-                Console.WriteLine(postfix);
+                Console.WriteLine("Postfix:  " + postfix);
                 answer = bp.CalculatePostFix(postfix);
-                Console.WriteLine(answer);
+                Console.WriteLine("Value:    " + answer);
             }
             catch (InvalidOperandException ex)
             {
                 Console.WriteLine(String.Format("InvalidOperandException caught: {0}", ex.Message));
+            }
+            catch (InvalidEquationException ex)
+            {
+                Console.WriteLine(String.Format("InvalidEquationException caught: {0}", ex.Message));
             }
             Console.WriteLine();
         }
@@ -68,8 +76,13 @@ namespace PostfixBooleanTester
             //testPostFix("NOT true OR NOT false AND true OR NOT (false AND true OR false)");
             //testPostFix("false AND true OR true AND false");
 
-            testPostFix("true OR (true AND false)");
-            testPostFix("(true OR true) AND false");
+            //testPostFix("true OR (true AND false)");
+            //testPostFix("(true OR true) AND false");
+
+            //testBooleanPostFix("true OR (true AND false)");
+            testBooleanPostFix("(true OR true) AND false)");
+
+
             Console.Read();
         }
     }

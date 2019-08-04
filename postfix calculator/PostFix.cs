@@ -9,215 +9,423 @@ namespace postfix_calculator
 {
     public class PostFix
     {
-        //private Dictionary<string, object> variables;
+        private bool BooleanMode = false;
 
-        public /*Tuple<Type, object>*/ string CalculatePostFix(string postFixEquation)
+        private const string OPERAND_REGEX = "(^true$)|(^false$)|([0-9]*)|(@[a-zA-Z]*)|(\\$[a-zA-Z]*)"; //"[0-9@$].*";
+        private Dictionary<string, string> _variables;
+        
+        private Dictionary<string, string> Variables
         {
-            Stack<string> operandStack = new Stack<string>();
-
-            List<string> sEquation = postFixEquation.Split(' ').ToList();
-
-            foreach (string item in sEquation)
+            get
             {
-                if (IsOperator(item))
+                if (_variables == null)
                 {
-                    int opParams = OperatorParameterNumber(item);
+                    _variables = new Dictionary<string, string>();
+                }
 
-                    if (operandStack.Count >= OperatorParameterNumber(item))
-                    {
-                        string[] p = new string[opParams];
+                return _variables;
+            }
+        }
 
-                        for (int i = 0; i < opParams; i++)
-                        {
-                            p[i] = operandStack.Pop();
-                        }
+        public PostFix(bool BooleanMode = false) 
+        {
+            this.BooleanMode = BooleanMode;
+        }
 
-                        operandStack.Push(Calculate(item, p.Reverse().ToArray()));
-                    }
-                    else
-                    {
-                        // TODO: use a better exception
-                        throw new Exception("This is Garbage!");
-                    }
+        public void AssignVariable(string name, string value)
+        {
+            if (Variables.Keys.Contains(name.ToLower()))
+            {
+                throw new InvalidVariableException(string.Format("AssignVariable(): Variable Already Exists ({0})", name));
+            }
+
+            Variables.Add(name.ToLower(), value);
+        }
+
+        /// <summary>
+        /// If var is a variable retrieve the value, otherwise return var
+        /// </summary>
+        /// <param name="var">The variable or value to examine</param>
+        /// <returns>Value if a value or variable, InvalidVariableException if invalid variable</returns>
+        public string TryGetVariable(string var)
+        {
+            if (var.First() == '@')
+            {
+                string temp = "";
+                if (Variables.TryGetValue(var, out temp))
+                {
+                    var = temp;
+                    return var;
                 }
                 else
                 {
-                    operandStack.Push(item);
+                    throw new InvalidVariableException(string.Format("Calculate(): Invalid Variable ({0}), Possibly not set.", var));
                 }
             }
 
-            //return new Tuple<Type, object>(typeof(double), 0.0);
-            if (operandStack.Count > 0)
-                return operandStack.Pop();
-            else
-                return null;
+            return var;
         }
 
-        public string ConvertToPostfix(string equation)
+        public string CalculatePostFix(string postFixEquation)
         {
-            equation = PrepareEquation(equation);
-
-            String output = "";
-            Stack<string> opstack = new Stack<string>();
-
-            foreach (string s in equation.Split(' '))
+            try
             {
-                string item = s.Trim();
+                Stack<string> operandStack = new Stack<string>();
 
-                if (item == "")
-                {
-                    continue;
-                }
+                List<string> sEquation = postFixEquation.Split(' ').ToList();
 
-                if (IsOperator(item))
+                foreach (string item in sEquation)
                 {
-                    if (item != ")")
+                    string tempOp = item.ToLower();
+                    if (IsOperator(tempOp))
                     {
-                        if (item == "(")
+                        int opParams = OperatorParameterNumber(tempOp);
+
+                        if (operandStack.Count >= OperatorParameterNumber(tempOp))
                         {
-                            opstack.Push(item);
+                            string[] p = new string[opParams];
+
+                            for (int i = 0; i < opParams; i++)
+                            {
+                                p[i] = operandStack.Pop();
+                            }
+
+                            operandStack.Push(Calculate(tempOp, p.Reverse().ToArray()));
                         }
                         else
                         {
-                            bool test = false;
-                            string rhs = "";
+                            // TODO: use a better exception
+                            throw new Exception("This is Garbage!");
+                        }
+                    }
+                    else
+                    {
+                        operandStack.Push(tempOp);
+                    }
+                }
 
-                            while (test == false)
+                //return new Tuple<Type, object>(typeof(double), 0.0);
+                if (operandStack.Count > 0)
+                {
+                    if (BooleanMode)
+                    {
+                        string value = operandStack.Pop();
+                        double dValue = 0.0;
+
+                        double.TryParse(value, out dValue);
+                        if (dValue != 0.0)
+                            return "true";
+                        else
+                            return "false";
+                    }
+
+                    return operandStack.Pop();
+                }
+                else
+                    throw new InvalidEquationException(string.Format("CalculatePostFix(): Invalid Equation: ({0})", postFixEquation));
+            }
+            catch (InvalidOperandException ex)
+            {
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidEquationException(string.Format("CalculatePostFix(): Invalid Equation: {0}", ex.Message));
+            }
+        }
+
+        public string ConvertToPostfix(string initialEquation)
+        {
+            try
+            {
+                string[] equation = PrepareEquation(initialEquation);
+                
+                String output = "";
+                Stack<string> opstack = new Stack<string>();
+                
+                foreach (string s in equation)
+                    {
+                    string item = s.ToLower().Trim();
+
+                    if (item == "")
+                    {
+                        continue;
+                    }
+
+                    if (IsOperator(item))
+                    {
+                        if (item != ")")
+                        {
+                            // If the token is a left paren
+                            if (item == "(")
                             {
+                                opstack.Push(item);
+                            }
+                            else
+                            {
+                                //bool test = false;
+                                //string rhs = "";
+
+                                /*
+                                 while ((there is a function at the top of the operator stack)
+                                       or (there is an operator at the top of the operator stack with greater precedence)
+                                       or (the operator at the top of the operator stack has equal precedence and is left associative))
+                                      and (the operator at the top of the operator stack is not a left parenthesis):
+                                    pop operators from the operator stack onto the output queue.
+                                push it onto the operator stack.
+                                */
                                 if (opstack.Count > 0)
                                 {
-                                    rhs = opstack.Peek();
-
-                                    if ((OpPrecedence(rhs) > 1) && (OpPrecedence(item) >= OpPrecedence(rhs)))
+                                    while ( (opstack.Count > 0) && 
+                                              (
+                                                  (OpPrecedence(item) >= OpPrecedence(opstack.Peek())) 
+                                                  && (opstack.Peek().Trim() != "(")
+                                              ) 
+                                          )
                                     {
                                         output += " " + opstack.Pop();
                                     }
-                                    else
-                                    {
-                                        test = true;
-                                    }
+                                }
+
+                                opstack.Push(item);
+                            }
+                        }
+                        else
+                        {
+                            // If the token is a right paren
+
+                            while (opstack.Peek().Trim() != "(")
+                            {
+                                output += " " + opstack.Pop();
+                            }
+
+                            if (opstack.Peek().Trim() == "(")
+                            {
+                                opstack.Pop();
+                            }
+
+                            //string popped = " ";
+                            //while (popped.Last() != '(')
+                            //{
+                            //    popped = opstack.Pop();
+                            //    //if (popped != "(")
+                            //    if (popped.Last() != '(')
+                            //    {
+                            //        output += " " + popped;
+                            //    }
+                            //
+                            //    //else if (popped.Length > 1)
+                            //    //{
+                            //    //    output += " " + popped.Substring(0, popped.Length - 1);
+                            //    //}
+                            //}
+                        }
+                    }
+                    else
+                    {
+                        // If the token is a value
+
+                        if (Regex.Match(item, OPERAND_REGEX).Success)
+                        {
+                            output += " " + item;
+                        }
+                        else
+                        {
+                            throw new InvalidOperandException(string.Format("ConvertToPostfix(): Invalid operand in expresssion", item));
+                        }
+                    }
+                }
+
+                while (opstack.Count > 0)
+                {
+                    output += " " + opstack.Pop();
+                }
+
+                return output.Trim();
+            }
+            catch (InvalidOperandException ex)
+            {
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidEquationException(string.Format("Invalid Equation: {0}", ex.Message));
+            }
+        }
+
+        public string ConvertToInfix(string postfixEquation)
+        {
+            // lowest precedence, formula
+            Stack<Tuple<int, string>> sEquation = new Stack<Tuple<int, string>>();
+
+            foreach (string s in postfixEquation.Split(' '))
+            {
+                if (IsOperator(s))
+                {
+                    string item = "";
+                    int precedence = -1;
+
+                    switch (OperatorParameterNumber(s))
+                    {
+                        case 1:
+                            precedence = Math.Max(OpPrecedence(s), sEquation.Peek().Item1);
+                            if ((sEquation.Peek().Item1 <= OpPrecedence(s)) || (sEquation.Peek().Item1 == -1))
+                            {
+                                item = string.Format("{0} {1}", s, sEquation.Pop().Item2);
+                            }
+                            else
+                            {
+                                item = string.Format("{0} ({1})", s, sEquation.Pop().Item2);
+                            }
+
+                            break;
+
+                        case 2:
+                            Tuple<int, string> i2 = sEquation.Pop();
+                            Tuple<int, string> i1 = sEquation.Pop();
+                            precedence = Math.Max(Math.Max(OpPrecedence(s), i1.Item1), i2.Item1);
+                            int opPrec = OpPrecedence(s);
+
+                            if ((i1.Item1 == -1) && (i2.Item1 == -1))
+                            {
+                                item = string.Format("{0} {1} {2}", i1.Item2, s, i2.Item2);
+                            }
+                            else if (i1.Item1 > opPrec)
+                            {
+                                if (i2.Item1 > opPrec)
+                                {
+                                    item = string.Format("({0}) {1} ({2})", i1.Item2, s, i2.Item2);
                                 }
                                 else
                                 {
-                                    test = true;
+                                    item = string.Format("({0}) {1} {2}", i1.Item2, s, i2.Item2);
                                 }
                             }
-
-                            opstack.Push(item);
-                        }
-                    }
-                    else
-                    {
-                        string popped = " ";
-                        while (popped.Last() != '(')
-                        {
-                            popped = opstack.Pop();
-                            //if (popped != "(")
-                            if (popped.Last() != '(')
+                            else if (i2.Item1 > opPrec)
                             {
-                                output += " " + popped;
+                                item = string.Format("{0} {1} ({2})", i1.Item2, s, i2.Item2);
                             }
-
-                            if (popped.Length > 1)
+                            else
                             {
-                                output += " " + popped.Substring(0, popped.Length - 1);
+                                item = string.Format("{0} {1} {2}", i1.Item2, s, i2.Item2);
                             }
-                        }
+                            break;
+
+                        default:
+                            // TODO: some sort of exception
+                            break;
                     }
+
+                    sEquation.Push(new Tuple<int, string>(precedence, item));
                 }
                 else
                 {
-                    if (Regex.Match(item, "[0-9@$].*").Success)
-                    {
-                        output += " " + item;
-                    }
-                    else
-                    {
-                        throw new InvalidOperandException("Invalid operand in expresssion");
-                    }
+                    sEquation.Push(new Tuple<int, string>(-1, s));
                 }
             }
 
-            while (opstack.Count > 0)
-            {
-                output += " " + opstack.Pop();
-            }
+            string infix = sEquation.Pop().Item2;
+            infix = infix.Replace("?.. ", "-");
 
-            return output.Trim();
+            return infix;
+            //return sEquation.Pop().Item2;
         }
 
         private string Calculate(string op, params string[] operands)
         {
             string sReturn = null;
 
+
+            List<string> valList = new List<string>();
+            foreach(string var in operands)
+            {
+                string temp = TryGetVariable(var);
+                
+                if (temp.Trim() == "true")
+                    temp = "1";
+                if (temp.Trim() == "false")
+                    temp = "0";
+
+                valList.Add(temp);
+            }
+            string[] values = valList.ToArray();
+            
             switch (op)
             {
                 case "!":
                     {
                         bool o1;
-                        bool.TryParse(operands[0], out o1);
+                        bool.TryParse(values[0], out o1);
                         sReturn = (!o1).ToString();
                         break;
                     }
                 case "~":
                     {
                         int o1;
-                        int.TryParse(operands[0], out o1);
+                        int.TryParse(values[0], out o1);
                         sReturn = (~o1).ToString();
+                        break;
+                    }
+                case "?..":
+                    {
+                        double o1;
+                        double.TryParse(values[0], out o1);
+                        sReturn = (-o1).ToString();
                         break;
                     }
                 case "*":
                     {
                         double o1, o2;
-                        double.TryParse(operands[0], out o1);
-                        double.TryParse(operands[1], out o2);
+                        double.TryParse(values[0], out o1);
+                        double.TryParse(values[1], out o2);
                         sReturn = (o1 * o2).ToString();
                         break;
                     }
                 case "/":
                     {
                         double o1, o2;
-                        double.TryParse(operands[0], out o1);
-                        double.TryParse(operands[1], out o2);
+                        double.TryParse(values[0], out o1);
+                        double.TryParse(values[1], out o2);
                         sReturn = (o1 / o2).ToString();
                         break;
                     }
                 case "%":
                     {
                         int o1, o2;
-                        int.TryParse(operands[0], out o1);
-                        int.TryParse(operands[1], out o2);
+                        int.TryParse(values[0], out o1);
+                        int.TryParse(values[1], out o2);
                         sReturn = (o1 % o2).ToString();
                         break;
                     }
                 case "+":
                     {
                         double o1, o2;
-                        double.TryParse(operands[0], out o1);
-                        double.TryParse(operands[1], out o2);
+                        double.TryParse(values[0], out o1);
+                        double.TryParse(values[1], out o2);
                         sReturn = (o1 + o2).ToString();
                         break;
                     }
                 case "-":
                     {
                         double o1, o2;
-                        double.TryParse(operands[0], out o1);
-                        double.TryParse(operands[1], out o2);
+                        double.TryParse(values[0], out o1);
+                        double.TryParse(values[1], out o2);
                         sReturn = (o1 - o2).ToString();
                         break;
                     }
-                case "Sin":
+                case "sin":
                     {
                         double o1;
-                        double.TryParse(operands[0], out o1);
+                        double.TryParse(values[0], out o1);
                         sReturn = Math.Sin(o1).ToString();
                         break;
                     }
 
                 default:
                     {
-                        sReturn = null; // Unknown operator
-                        break;
+                        throw new InvalidOperandException(string.Format("Calculate(): Invalid Operand ({0})", op));
+                        //sReturn = null; // Unknown operator
+                        //break;
                     }
             }
             return sReturn;
@@ -228,28 +436,32 @@ namespace postfix_calculator
             if (op == null)
                 return false;
 
-            string test = op.ToLower();
+            string[] ops = { ")", "sin", "!", "?..", "+", "-", "*", "/", "%" };
 
-            if ((test == "+") ||
-                (test == "-") ||
-                (test == "/") ||
-                (test == "*") ||
-                (test.Last() == '(') ||
-                (test == ")") ||
-                (test == "%") ||
-                (test == "sin")
-                )
+            if ((ops.Any(p => p == op)) || (op.Last() == '('))
             {
                 return true;
             }
 
-            return false;
+            if (Regex.Match(op, OPERAND_REGEX).Success)
+            {
+                return false;
+            }
+
+            throw new InvalidOperandException(string.Format("IsOperator(): Invalid Operand ({0})", op));
         }
 
         private int OperatorParameterNumber(string op)
         {
-            string[] _1op = { "Sin", "!" };
+            string _op = op.ToLower();
+            string[] _ignoreOp = { "(", ")" };
+            string[] _1op = { "sin", "!", "?.." };
             string[] _2op = { "+", "-", "*", "/", "%" };
+
+            if (_ignoreOp.Any(p => p == op))
+            {
+                return -1;
+            }
 
             if (_1op.Any(p => p == op))
             {
@@ -261,8 +473,7 @@ namespace postfix_calculator
                 return 2;
             }
 
-            // TODO: throw some sort of error
-            return -1;
+            throw new InvalidOperandException(string.Format("OperatorParameterNumber(): Invalid Operand ({0})", op));
         }
 
         private int OpPrecedence(string op)
@@ -277,12 +488,14 @@ namespace postfix_calculator
             {
                 case "(":
                 case ")":
+                case "sin":
                     {
                         return 1;
                     }
 
                 case "!":
                 case "~":
+                case "?..":
                     {
                         return 2;
                     }
@@ -302,13 +515,14 @@ namespace postfix_calculator
 
                 default:
                     {
-                        return -1; // Unknown precedence or an error
+                        throw new InvalidOperandException(string.Format("OpPrecedence(): Invalid Operand ({0})", op));
                     }
             }
         }
 
-        private string PrepareEquation(string equation)
+        private string[] PrepareEquation(string equation)
         {
+            equation = equation.ToLower();
             equation = equation.Replace("(", "( ");
             equation = equation.Replace(")", " ) ");
             equation = equation.Replace("*", " * ");
@@ -316,8 +530,40 @@ namespace postfix_calculator
             equation = equation.Replace("+", " + ");
             equation = equation.Replace("-", " - ");
             equation = equation.Replace("%", " % ");
+            
+            equation = equation.Replace("sin", " sin ");
 
-            return equation;
+            List<string> splitString = new List<string>(equation.Trim().Split(' '));
+            List<string> newEquation = new List<string>();
+            
+            int i = 0;
+            //for (int i = 0; i < splitString.Length; i++)
+            while (i < splitString.Count)
+            {
+                if (i == 0)
+                {
+                    if (splitString[i] == "-")
+                    {
+                        splitString[i] = "?..";
+                    }
+                }
+                else if ((splitString[i] == "-") && (splitString[i - 1] != ")") && (IsOperator(splitString[i - 1])))
+                {
+                    splitString[i] = "?..";
+                } 
+
+                if (splitString[i].Trim() != "")
+                {
+                    newEquation.Add(splitString[i]);
+                    i++;
+                }
+                else
+                {
+                    splitString.RemoveAt(i);
+                }
+            }
+
+            return newEquation.ToArray();
         }
     }
 }
